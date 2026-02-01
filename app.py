@@ -65,7 +65,7 @@ def send_welcome(message):
     # Mini App ဖွင့်ဖို့ Button
     markup = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True)
     # မှတ်ချက် - URL နေရာမှာ Deploy လုပ်ပြီးရလာတဲ့ Web URL ကိုထည့်ရမယ်
-    web_app = telebot.types.WebAppInfo("https://your-app-url.onrender.com") 
+    web_app = telebot.types.WebAppInfo("https://botai-xajq.onrender.com") 
     markup.add(telebot.types.KeyboardButton(text="Open Mini App 🎬", web_app=web_app))
     bot.send_message(message.chat.id, "မင်္ဂလာပါ! ရုပ်ရှင်နှင့် သီချင်းများကြည့်ရန် အောက်ပါခလုတ်ကို နှိပ်ပါ။", reply_markup=markup)
 
