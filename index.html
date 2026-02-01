@@ -1,131 +1,213 @@
 <!DOCTYPE html>
-<html lang="my">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mini Movie App</title>
+    <title>StreamHub</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { font-family: sans-serif; background-color: var(--tg-theme-bg-color, #1c1c1e); color: var(--tg-theme-text-color, #fff); padding: 10px; margin: 0; }
-        .container { max-width: 600px; margin: auto; }
-        
+        :root {
+            --bg-color: #141414;
+            --card-bg: #1f1f1f;
+            --text-color: #ffffff;
+            --accent-color: #e50914; /* Netflix Red */
+            --sub-text: #b3b3b3;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            padding-bottom: 70px; /* For bottom nav */
+        }
+
+        /* Header */
+        .header {
+            padding: 20px;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.7), transparent);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .header h1 { margin: 0; font-size: 24px; color: var(--accent-color); }
+
         /* Tabs */
-        .tabs { display: flex; justify-content: center; margin-bottom: 20px; }
-        .tab-btn { background: none; border: none; color: gray; padding: 10px 20px; font-size: 16px; cursor: pointer; }
-        .tab-btn.active { color: var(--tg-theme-button-color, #2481cc); border-bottom: 2px solid #2481cc; }
+        .tabs {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 10px 0;
+        }
+        .tab-btn {
+            background: transparent;
+            border: 1px solid var(--sub-text);
+            color: var(--text-color);
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .tab-btn.active {
+            background: var(--text-color);
+            color: var(--bg-color);
+            border-color: var(--text-color);
+            font-weight: bold;
+        }
+
+        /* Content Grid */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr); /* 2 columns */
+            gap: 15px;
+            padding: 15px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 8px;
+            overflow: hidden;
+            transition: transform 0.2s;
+        }
+        .card:active { transform: scale(0.98); }
         
-        /* Cards */
-        .card { background: var(--tg-theme-secondary-bg-color, #2c2c2e); border-radius: 10px; padding: 10px; margin-bottom: 15px; display: flex; gap: 10px; }
-        .poster { width: 80px; height: 120px; object-fit: cover; border-radius: 5px; }
-        .info { flex: 1; }
-        .title { font-size: 18px; font-weight: bold; margin: 0 0 5px 0; }
-        .review { font-size: 14px; color: #aaa; margin-bottom: 10px; font-style: italic; }
-        
-        /* Buttons */
-        .btn { background-color: var(--tg-theme-button-color, #2481cc); color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; text-decoration: none; font-size: 14px; display: inline-block; }
-        .btn-del { background-color: #ff3b30; margin-left: 10px; }
-        
-        /* Admin Form */
-        #admin-panel { display: none; background: #333; padding: 15px; border-radius: 10px; margin-top: 20px; }
-        input, select, textarea { width: 100%; padding: 8px; margin-bottom: 10px; border-radius: 5px; border: none; box-sizing: border-box; }
-        .toggle-admin { text-align: center; margin-top: 20px; cursor: pointer; color: gray; font-size: 12px; }
+        /* Thumbnail Placeholder */
+        .thumbnail {
+            width: 100%;
+            height: 100px;
+            background: #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+        }
+
+        .info { padding: 10px; }
+        .title { font-size: 14px; margin: 0 0 5px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .type { font-size: 10px; color: var(--sub-text); text-transform: uppercase; }
+
+        /* Media Player Overlay */
+        #player-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: black; z-index: 1000; display: none;
+            flex-direction: column; justify-content: center;
+        }
+        .close-btn {
+            position: absolute; top: 20px; right: 20px;
+            color: white; font-size: 30px; cursor: pointer;
+        }
+        video, audio { width: 100%; }
+
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="tabs">
-        <button class="tab-btn active" onclick="showTab('movies')">Movies</button>
-        <button class="tab-btn" onclick="showTab('music')">Music</button>
-    </div>
-
-    <div id="movies-list">
-        {% for item in movies %}
-        <div class="card">
-            <img src="{{ item.poster_url }}" class="poster">
-            <div class="info">
-                <h3 class="title">{{ item.title }}</h3>
-                <p class="review">"{{ item.review }}"</p>
-                <a href="{{ item.content_url }}" target="_blank" class="btn">Watch</a>
-                <button onclick="deleteMedia({{ item.id }})" class="btn btn-del">Del</button>
-            </div>
+    <div class="header">
+        <h1>STREAM HUB</h1>
+        <div class="tabs">
+            <button class="tab-btn active" onclick="filter('all', this)">All</button>
+            <button class="tab-btn" onclick="filter('movies', this)">Movies</button>
+            <button class="tab-btn" onclick="filter('music', this)">Music</button>
         </div>
-        {% endfor %}
     </div>
 
-    <div id="music-list" style="display:none;">
-        {% for item in music %}
-        <div class="card">
-            <img src="{{ item.poster_url }}" class="poster">
-            <div class="info">
-                <h3 class="title">{{ item.title }}</h3>
-                <p class="review">{{ item.review }}</p>
-                <a href="{{ item.content_url }}" target="_blank" class="btn">Listen</a>
-                <button onclick="deleteMedia({{ item.id }})" class="btn btn-del">Del</button>
-            </div>
+    <div id="content-area" class="grid">
         </div>
-        {% endfor %}
+
+    <div id="player-modal">
+        <div class="close-btn" onclick="closePlayer()">×</div>
+        <div id="player-container"></div>
     </div>
 
-    <div class="toggle-admin" onclick="document.getElementById('admin-panel').style.display='block'">Admin Upload Area</div>
+    <script>
+        let allData = { movies: [], music: [] };
 
-    <div id="admin-panel">
-        <h3>Upload New Content</h3>
-        <input type="text" id="title" placeholder="Title">
-        <select id="category">
-            <option value="Movie">Movie</option>
-            <option value="Music">Music</option>
-        </select>
-        <input type="text" id="poster" placeholder="Poster Image URL">
-        <input type="text" id="content" placeholder="Video/Audio Link">
-        <textarea id="review" placeholder="Review / Description"></textarea>
-        <button class="btn" onclick="submitData()">Upload</button>
-        <button class="btn btn-del" onclick="document.getElementById('admin-panel').style.display='none'">Close</button>
-    </div>
-</div>
-
-<script>
-    // Initialize Telegram WebApp
-    const tg = window.Telegram.WebApp;
-    tg.expand();
-
-    function showTab(type) {
-        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-        event.target.classList.add('active');
-        document.getElementById('movies-list').style.display = type === 'movies' ? 'block' : 'none';
-        document.getElementById('music-list').style.display = type === 'music' ? 'block' : 'none';
-    }
-
-    function submitData() {
-        const data = {
-            title: document.getElementById('title').value,
-            category: document.getElementById('category').value,
-            poster_url: document.getElementById('poster').value,
-            content_url: document.getElementById('content').value,
-            review: document.getElementById('review').value
-        };
-
-        fetch('/add', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(data)
-        }).then(res => {
-            if(res.ok) {
-                alert("Uploaded!");
-                location.reload();
+        // 1. Data Server မှ ဆွဲယူခြင်း
+        async function fetchData() {
+            try {
+                const response = await fetch('/api/data'); // Python backend မှ data ယူ
+                const data = await response.json();
+                allData = data;
+                renderItems('all');
+            } catch (error) {
+                console.error("Data မရရှိပါ", error);
+                // Sample Data for Testing UI if backend fails
+                allData = {
+                    movies: [{title: "Demo Movie", url: "https://www.w3schools.com/html/mov_bbb.mp4"}],
+                    music: [{title: "Demo Song", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"}]
+                };
+                renderItems('all');
             }
-        });
-    }
+        }
 
-    function deleteMedia(id) {
-        if(confirm("Are you sure?")) {
-            fetch('/delete/' + id, { method: 'DELETE' })
-            .then(res => {
-                if(res.ok) location.reload();
+        // 2. UI ပေါ်တွင် ပြသခြင်း
+        function renderItems(filterType) {
+            const container = document.getElementById('content-area');
+            container.innerHTML = '';
+
+            let items = [];
+            if (filterType === 'all' || filterType === 'movies') {
+                items = items.concat(allData.movies.map(i => ({...i, type: 'Movie'})));
+            }
+            if (filterType === 'all' || filterType === 'music') {
+                items = items.concat(allData.music.map(i => ({...i, type: 'Music'})));
+            }
+
+            items.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.onclick = () => openPlayer(item);
+                
+                // Icon selection
+                const icon = item.type === 'Movie' ? '🎬' : '🎵';
+
+                card.innerHTML = `
+                    <div class="thumbnail">${icon}</div>
+                    <div class="info">
+                        <h3 class="title">${item.title}</h3>
+                        <div class="type">${item.type}</div>
+                    </div>
+                `;
+                container.appendChild(card);
             });
         }
-    }
-</script>
 
+        // 3. Filter Tab အလုပ်လုပ်ပုံ
+        function filter(type, btn) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            renderItems(type);
+        }
+
+        // 4. Player ဖွင့်ခြင်း
+        function openPlayer(item) {
+            const modal = document.getElementById('player-modal');
+            const container = document.getElementById('player-container');
+            modal.style.display = 'flex';
+            
+            if (item.type === 'Movie') {
+                container.innerHTML = `<video controls autoplay src="${item.url}"></video>`;
+            } else {
+                container.innerHTML = `
+                    <div style="text-align:center; color:white; margin-bottom:20px;">
+                        <h2>${item.title}</h2>
+                        <div style="font-size:50px;">🎵</div>
+                    </div>
+                    <audio controls autoplay src="${item.url}"></audio>
+                `;
+            }
+        }
+
+        function closePlayer() {
+            document.getElementById('player-modal').style.display = 'none';
+            document.getElementById('player-container').innerHTML = ''; // Stop playing
+        }
+
+        // Start
+        window.Telegram.WebApp.expand();
+        fetchData();
+
+    </script>
 </body>
 </html>
