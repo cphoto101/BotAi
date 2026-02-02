@@ -3,73 +3,149 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stream Mini App - No Storage Version</title>
+    <title>Premium Stream App</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root { --bg: #121212; --card: #1e1e1e; --accent: #0088cc; --text: #ffffff; }
-        body { margin: 0; background: var(--bg); color: var(--text); font-family: sans-serif; }
-        
-        /* Loading Screen */
-        #loader { position: fixed; inset: 0; background: var(--bg); z-index: 99; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: 0.5s; }
-        .spin { border: 3px solid #333; border-top: 3px solid var(--accent); border-radius: 50%; width: 30px; height: 30px; animation: s 1s linear infinite; }
-        @keyframes s { to { transform: rotate(360deg); } }
+        :root {
+            --bg: #0f172a;
+            --card: rgba(30, 41, 59, 0.7);
+            --accent: #38bdf8;
+            --text: #f8fafc;
+            --text-dim: #94a3b8;
+            --glass: rgba(255, 255, 255, 0.05);
+        }
 
-        .container { padding: 15px; max-width: 500px; margin: auto; }
-        .tabs { display: flex; background: var(--card); border-radius: 10px; padding: 4px; margin-bottom: 15px; }
-        .tab { flex: 1; text-align: center; padding: 10px; cursor: pointer; border-radius: 8px; }
-        .tab.active { background: var(--accent); font-weight: bold; }
+        body {
+            margin: 0; background: var(--bg); color: var(--text);
+            font-family: 'Inter', -apple-system, sans-serif;
+            background-image: radial-gradient(circle at top right, #1e293b, #0f172a);
+            min-height: 100vh;
+        }
 
-        #adminPanel { background: var(--card); padding: 15px; border-radius: 12px; border: 1px solid var(--accent); margin-bottom: 20px; display: none; }
-        input, textarea { width: 100%; padding: 10px; margin: 5px 0; border-radius: 8px; border: 1px solid #333; background: #252525; color: white; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; border: none; border-radius: 8px; background: var(--accent); color: white; font-weight: bold; margin-top: 10px; }
+        /* Loading Animation */
+        #loader {
+            position: fixed; inset: 0; background: var(--bg); z-index: 100;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+        }
+        .pulse {
+            width: 60px; height: 60px; background: var(--accent);
+            border-radius: 50%; animation: pulse 1.5s infinite ease-in-out;
+            box-shadow: 0 0 20px var(--accent);
+        }
+        @keyframes pulse { 0% { transform: scale(0.8); opacity: 0.5; } 50% { transform: scale(1); opacity: 1; } 100% { transform: scale(0.8); opacity: 0.5; } }
 
-        .movie-card { background: var(--card); border-radius: 12px; margin-bottom: 12px; display: flex; overflow: hidden; }
-        .movie-card img { width: 90px; height: 130px; object-fit: cover; }
-        .m-info { padding: 10px; flex: 1; }
-        .music-card { background: var(--card); border-radius: 12px; padding: 15px; margin-bottom: 12px; }
-        audio { width: 100%; margin-top: 10px; filter: invert(100%); }
+        .container { padding: 16px; max-width: 500px; margin: auto; }
+
+        /* Header UI */
+        header { margin-bottom: 24px; text-align: center; }
+        header h1 { font-size: 1.5rem; margin: 0; color: var(--accent); }
+
+        /* Tabs */
+        .tabs {
+            display: flex; background: var(--card); border-radius: 16px;
+            padding: 6px; margin-bottom: 20px; backdrop-filter: blur(10px);
+            border: 1px solid var(--glass);
+        }
+        .tab {
+            flex: 1; text-align: center; padding: 12px; border-radius: 12px;
+            cursor: pointer; transition: 0.3s; font-weight: 600; font-size: 0.9rem;
+        }
+        .tab.active { background: var(--accent); color: #000; box-shadow: 0 4px 12px rgba(56, 189, 248, 0.3); }
+
+        /* Admin/Forms */
+        .admin-card {
+            background: var(--card); padding: 20px; border-radius: 20px;
+            border: 1px solid var(--accent); margin-bottom: 24px;
+            backdrop-filter: blur(10px); display: none;
+        }
+        input, textarea, select {
+            width: 100%; padding: 14px; margin: 8px 0; border-radius: 12px;
+            border: 1px solid var(--glass); background: rgba(15, 23, 42, 0.8);
+            color: white; box-sizing: border-box; font-size: 0.9rem;
+        }
+        button {
+            width: 100%; padding: 14px; border: none; border-radius: 12px;
+            background: var(--accent); color: #000; font-weight: bold;
+            cursor: pointer; transition: 0.2s; margin-top: 12px;
+        }
+        button:active { transform: scale(0.98); }
+
+        /* Movie Card */
+        .movie-card {
+            background: var(--card); border-radius: 20px; margin-bottom: 16px;
+            display: flex; overflow: hidden; border: 1px solid var(--glass);
+            backdrop-filter: blur(10px);
+        }
+        .movie-card img { width: 110px; height: 160px; object-fit: cover; }
+        .m-info { padding: 14px; flex: 1; }
+        .m-info h3 { margin: 0; font-size: 1.1rem; }
+        .key-badge {
+            display: inline-block; background: rgba(56, 189, 248, 0.1);
+            color: var(--accent); padding: 4px 10px; border-radius: 8px;
+            font-size: 0.75rem; margin: 8px 0; font-weight: bold;
+        }
+
+        /* Music Card */
+        .music-card {
+            background: var(--card); border-radius: 20px; padding: 16px;
+            margin-bottom: 16px; border: 1px solid var(--glass);
+        }
+        .music-card h3 { margin: 0 0 12px 0; font-size: 1rem; display: flex; align-items: center; gap: 8px; }
+        audio { width: 100%; height: 40px; border-radius: 10px; }
+        .lyrics-area {
+            font-size: 0.85rem; color: var(--text-dim); margin-top: 12px;
+            white-space: pre-line; line-height: 1.5; padding-top: 12px;
+            border-top: 1px solid var(--glass);
+        }
+
         .hidden { display: none; }
     </style>
 </head>
 <body>
 
     <div id="loader">
-        <div class="spin"></div>
-        <p id="greet">Initializing...</p>
+        <div class="pulse"></div>
+        <p id="greet" style="margin-top:20px; font-weight:500;">Connecting...</p>
     </div>
 
     <div class="container">
-        <div id="adminPanel">
+        <header>
+            <h1>STREAM HUB</h1>
+        </header>
+
+        <div id="adminPanel" class="admin-card">
             <div id="loginSection">
-                <input type="email" id="email" placeholder="Admin Email">
+                <h3 style="margin-top:0;">Admin Login</h3>
+                <input type="email" id="email" placeholder="Email">
                 <input type="password" id="pass" placeholder="Password">
-                <button onclick="adminLogin()">Login</button>
+                <button onclick="adminLogin()">Unlock Dashboard</button>
             </div>
+            
             <div id="uploadSection" class="hidden">
-                <h4 style="margin:0 0 10px 0;">Upload Content</h4>
-                <select id="upType" onchange="toggleForm()" style="width:100%; padding:8px; border-radius:5px; background:#252525; color:white;">
-                    <option value="movie">Movie</option>
-                    <option value="music">Music</option>
+                <h3 style="margin-top:0;">Upload Content</h3>
+                <select id="upType" onchange="toggleForm()">
+                    <option value="movie">Movie Post</option>
+                    <option value="music">Music Track</option>
                 </select>
                 <div id="mForm">
                     <input type="text" id="mTitle" placeholder="Movie Title">
-                    <input type="text" id="mImg" placeholder="Image URL (Link)">
+                    <input type="text" id="mImg" placeholder="Image Direct Link (URL)">
                     <input type="text" id="mKey" placeholder="Access Key">
-                    <textarea id="mReview" placeholder="Review..."></textarea>
+                    <textarea id="mReview" placeholder="Quick Review..." rows="3"></textarea>
                 </div>
                 <div id="muForm" class="hidden">
                     <input type="text" id="muTitle" placeholder="Song Title">
-                    <input type="text" id="muUrl" placeholder="MP3 URL (Link)">
-                    <textarea id="muLyrics" placeholder="Lyrics..."></textarea>
+                    <input type="text" id="muUrl" placeholder="Direct MP3/Telegram URL">
+                    <textarea id="muLyrics" placeholder="Lyrics..." rows="3"></textarea>
                 </div>
-                <button onclick="postData()">Post Now</button>
-                <button onclick="logout()" style="background:#444; margin-top:5px;">Logout</button>
+                <button onclick="postData()" style="background:#4ade80;">Post to App</button>
+                <button onclick="logout()" style="background:#444; color:white;">Sign Out</button>
             </div>
         </div>
 
         <div class="tabs">
-            <div class="tab active" onclick="setTab('movie')">Movies</div>
-            <div class="tab" onclick="setTab('music')">Music</div>
+            <div class="tab active" onclick="setTab('movie')">MOVIES</div>
+            <div class="tab" onclick="setTab('music')">MUSIC</div>
         </div>
 
         <div id="movieList"></div>
@@ -85,7 +161,7 @@
             apiKey: "AIzaSyCdyEiklUPrEL6TklIDyOh_F-PhgCyCjLw",
             authDomain: "zzaro0.firebaseapp.com",
             projectId: "zzaro0",
-            storageBucket: "zzaro0.firebasestorage.app", // ဒါက ကုဒ်ထဲမှာပဲရှိနေမှာပါ၊ တကယ်မသုံးတော့ပါ
+            storageBucket: "zzaro0.firebasestorage.app",
             messagingSenderId: "197891222875",
             appId: "1:197891222875:web:8897ba4de2829eeb0d3e7e"
         };
@@ -96,29 +172,35 @@
 
         const tg = window.Telegram.WebApp;
         tg.expand();
+        tg.headerColor = "#0f172a";
 
-        // ⚠️ Admin Telegram ID 
+        // Admin Telegram ID စစ်ရန်
         const ADMIN_ID = 1924452453; 
 
         window.onload = () => {
             const u = tg.initDataUnsafe.user;
-            if(u) document.getElementById('greet').innerText = `Hello, ${u.first_name}!`;
+            if(u) document.getElementById('greet').innerText = `Welcome, ${u.first_name}`;
             if(u && u.id === ADMIN_ID) document.getElementById('adminPanel').style.display = 'block';
-            setTimeout(() => document.getElementById('loader').style.display = 'none', 1500);
+            setTimeout(() => {
+                document.getElementById('loader').style.opacity = '0';
+                setTimeout(() => document.getElementById('loader').style.display = 'none', 500);
+            }, 2000);
         };
 
-        // Auth
+        // Admin Auth Logic
         onAuthStateChanged(auth, user => {
             document.getElementById('loginSection').classList.toggle('hidden', !!user);
             document.getElementById('uploadSection').classList.toggle('hidden', !user);
         });
 
         window.adminLogin = () => {
-            signInWithEmailAndPassword(auth, document.getElementById('email').value, document.getElementById('pass').value)
-            .catch(e => alert(e.message));
+            const e = document.getElementById('email').value;
+            const p = document.getElementById('pass').value;
+            signInWithEmailAndPassword(auth, e, p).catch(err => alert("Login Failed: " + err.message));
         };
         window.logout = () => signOut(auth);
 
+        // UI Tabs & Form Logic
         window.toggleForm = () => {
             const isM = document.getElementById('upType').value === 'movie';
             document.getElementById('mForm').classList.toggle('hidden', !isM);
@@ -132,55 +214,63 @@
             document.getElementById('musicList').classList.toggle('hidden', t !== 'music');
         };
 
+        // Firestore Posting Logic
         window.postData = async () => {
             const type = document.getElementById('upType').value;
             try {
                 if(type === 'movie') {
                     await addDoc(collection(db, "movies"), {
-                        t: document.getElementById('mTitle').value,
-                        i: document.getElementById('mImg').value,
-                        k: document.getElementById('mKey').value,
-                        r: document.getElementById('mReview').value,
-                        date: Date.now()
+                        title: document.getElementById('mTitle').value,
+                        img: document.getElementById('mImg').value,
+                        key: document.getElementById('mKey').value,
+                        review: document.getElementById('mReview').value,
+                        createdAt: Date.now()
                     });
                 } else {
                     await addDoc(collection(db, "music"), {
-                        t: document.getElementById('muTitle').value,
-                        u: document.getElementById('muUrl').value,
-                        l: document.getElementById('muLyrics').value,
-                        date: Date.now()
+                        title: document.getElementById('muTitle').value,
+                        url: document.getElementById('muUrl').value,
+                        lyrics: document.getElementById('muLyrics').value,
+                        createdAt: Date.now()
                     });
                 }
-                alert("Posted!");
-            } catch(e) { alert(e.message); }
+                alert("Published Successfully!");
+                // Clear Inputs
+                document.querySelectorAll('input, textarea').forEach(i => i.value = "");
+            } catch(e) { alert("Error: " + e.message); }
         };
 
-        // Realtime Data
-        onSnapshot(query(collection(db, "movies"), orderBy("date", "desc")), s => {
+        // Realtime Data Streaming
+        onSnapshot(query(collection(db, "movies"), orderBy("createdAt", "desc")), s => {
             const list = document.getElementById('movieList');
             list.innerHTML = "";
             s.forEach(doc => {
                 const d = doc.data();
-                list.innerHTML += `<div class="movie-card">
-                    <img src="${d.i}">
+                list.innerHTML += `
+                <div class="movie-card">
+                    <img src="${d.img || 'https://via.placeholder.com/100x150'}" onerror="this.src='https://via.placeholder.com/100x150'">
                     <div class="m-info">
-                        <h4 style="margin:0;">${d.t}</h4>
-                        <small style="color:var(--accent)">Key: ${d.k}</small>
-                        <p style="font-size:12px; color:#aaa; margin-top:5px;">${d.r}</p>
+                        <h3>${d.title}</h3>
+                        <div class="key-badge">🔑 ${d.key}</div>
+                        <p style="font-size:0.85rem; color:var(--text-dim); margin:0;">${d.review}</p>
                     </div>
                 </div>`;
             });
         });
 
-        onSnapshot(query(collection(db, "music"), orderBy("date", "desc")), s => {
+        onSnapshot(query(collection(db, "music"), orderBy("createdAt", "desc")), s => {
             const list = document.getElementById('musicList');
             list.innerHTML = "";
             s.forEach(doc => {
                 const d = doc.data();
-                list.innerHTML += `<div class="music-card">
-                    <h4 style="margin:0;">🎵 ${d.t}</h4>
-                    <audio controls src="${d.u}"></audio>
-                    <p style="font-size:12px; color:#aaa; white-space:pre-line; margin-top:10px;">${d.l}</p>
+                list.innerHTML += `
+                <div class="music-card">
+                    <h3><span>🎵</span> ${d.title}</h3>
+                    <audio controls preload="none">
+                        <source src="${d.url}" type="audio/mpeg">
+                        Your browser does not support audio.
+                    </audio>
+                    ${d.lyrics ? `<div class="lyrics-area">${d.lyrics}</div>` : ''}
                 </div>`;
             });
         });
