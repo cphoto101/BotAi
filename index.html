@@ -3,145 +3,89 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stream Mini App</title>
+    <title>Stream Mini App - No Storage Version</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root {
-            --bg-color: #121212;
-            --text-color: #ffffff;
-            --card-bg: #1e1e1e;
-            --accent: #0088cc;
-            --btn-text: #ffffff;
-        }
-
-        body {
-            margin: 0; padding: 0;
-            background-color: var(--bg-color); color: var(--text-color);
-            font-family: -apple-system, sans-serif;
-        }
-
+        :root { --bg: #121212; --card: #1e1e1e; --accent: #0088cc; --text: #ffffff; }
+        body { margin: 0; background: var(--bg); color: var(--text); font-family: sans-serif; }
+        
         /* Loading Screen */
-        #loadingScreen {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--bg-color); z-index: 999;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            transition: opacity 0.5s;
-        }
+        #loader { position: fixed; inset: 0; background: var(--bg); z-index: 99; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: 0.5s; }
+        .spin { border: 3px solid #333; border-top: 3px solid var(--accent); border-radius: 50%; width: 30px; height: 30px; animation: s 1s linear infinite; }
+        @keyframes s { to { transform: rotate(360deg); } }
 
-        .loader {
-            border: 4px solid #333; border-top: 4px solid var(--accent);
-            border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .container { padding: 15px; max-width: 500px; margin: auto; }
+        .tabs { display: flex; background: var(--card); border-radius: 10px; padding: 4px; margin-bottom: 15px; }
+        .tab { flex: 1; text-align: center; padding: 10px; cursor: pointer; border-radius: 8px; }
+        .tab.active { background: var(--accent); font-weight: bold; }
 
-        .container { padding: 15px; max-width: 600px; margin: auto; }
+        #adminPanel { background: var(--card); padding: 15px; border-radius: 12px; border: 1px solid var(--accent); margin-bottom: 20px; display: none; }
+        input, textarea { width: 100%; padding: 10px; margin: 5px 0; border-radius: 8px; border: 1px solid #333; background: #252525; color: white; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; border: none; border-radius: 8px; background: var(--accent); color: white; font-weight: bold; margin-top: 10px; }
 
-        /* Admin UI */
-        #adminSection { display: none; margin-bottom: 20px; }
-        .admin-card {
-            background: var(--card-bg); padding: 15px; border-radius: 12px;
-            border: 1px solid var(--accent); box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-        }
-
-        /* Tabs */
-        .tabs {
-            display: flex; background: var(--card-bg); border-radius: 10px;
-            padding: 4px; margin-bottom: 20px;
-        }
-        .tab {
-            flex: 1; text-align: center; padding: 12px; border-radius: 8px;
-            cursor: pointer; transition: 0.3s;
-        }
-        .tab.active { background: var(--accent); color: var(--btn-text); font-weight: bold; }
-
-        /* Form Inputs */
-        input, textarea, select {
-            width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px;
-            border: 1px solid #333; background: #252525; color: white; box-sizing: border-box;
-        }
-        button {
-            width: 100%; padding: 12px; border: none; border-radius: 8px;
-            background: var(--accent); color: white; font-weight: bold; cursor: pointer;
-        }
-
-        /* Content Cards */
-        .card {
-            background: var(--card-bg); border-radius: 12px; margin-bottom: 15px;
-            display: flex; overflow: hidden; gap: 12px;
-        }
-        .poster { width: 100px; height: 140px; object-fit: cover; }
-        .info { padding: 10px; flex: 1; }
-        .music-card { background: var(--card-bg); border-radius: 12px; padding: 15px; margin-bottom: 15px; }
-        audio { width: 100%; margin-top: 10px; }
+        .movie-card { background: var(--card); border-radius: 12px; margin-bottom: 12px; display: flex; overflow: hidden; }
+        .movie-card img { width: 90px; height: 130px; object-fit: cover; }
+        .m-info { padding: 10px; flex: 1; }
+        .music-card { background: var(--card); border-radius: 12px; padding: 15px; margin-bottom: 12px; }
+        audio { width: 100%; margin-top: 10px; filter: invert(100%); }
         .hidden { display: none; }
     </style>
 </head>
 <body>
 
-    <div id="loadingScreen">
-        <div class="loader"></div>
-        <h3 id="userNameDisplay" style="margin-top:15px;">Welcome</h3>
+    <div id="loader">
+        <div class="spin"></div>
+        <p id="greet">Initializing...</p>
     </div>
 
-    <div class="container" id="mainApp" style="display:none;">
-        
-        <div id="adminSection">
-            <div id="loginForm" class="admin-card">
-                <h4>🔒 Admin Login</h4>
-                <input type="email" id="email" placeholder="Email">
+    <div class="container">
+        <div id="adminPanel">
+            <div id="loginSection">
+                <input type="email" id="email" placeholder="Admin Email">
                 <input type="password" id="pass" placeholder="Password">
                 <button onclick="adminLogin()">Login</button>
             </div>
-
-            <div id="uploadForm" class="admin-card hidden">
-                <div style="display:flex; justify-content:space-between;">
-                    <h4>📤 Upload</h4>
-                    <button onclick="logout()" style="width:auto; padding:4px 10px; background:#ff4757;">Logout</button>
-                </div>
-                <select id="type" onchange="toggleInputs()">
+            <div id="uploadSection" class="hidden">
+                <h4 style="margin:0 0 10px 0;">Upload Content</h4>
+                <select id="upType" onchange="toggleForm()" style="width:100%; padding:8px; border-radius:5px; background:#252525; color:white;">
                     <option value="movie">Movie</option>
                     <option value="music">Music</option>
                 </select>
-
-                <div id="movieInp">
-                    <input type="text" id="mTitle" placeholder="Title">
-                    <textarea id="mReview" placeholder="Review"></textarea>
-                    <input type="text" id="mKey" placeholder="Secret Key">
-                    <input type="file" id="mFile" accept="image/*">
+                <div id="mForm">
+                    <input type="text" id="mTitle" placeholder="Movie Title">
+                    <input type="text" id="mImg" placeholder="Image URL (Link)">
+                    <input type="text" id="mKey" placeholder="Access Key">
+                    <textarea id="mReview" placeholder="Review..."></textarea>
                 </div>
-
-                <div id="musicInp" class="hidden">
+                <div id="muForm" class="hidden">
                     <input type="text" id="muTitle" placeholder="Song Title">
-                    <textarea id="muLyrics" placeholder="Lyrics"></textarea>
-                    <input type="file" id="muFile" accept="audio/*">
+                    <input type="text" id="muUrl" placeholder="MP3 URL (Link)">
+                    <textarea id="muLyrics" placeholder="Lyrics..."></textarea>
                 </div>
-
-                <button id="upBtn" onclick="uploadData()">Upload Now</button>
-                <p id="progress" style="font-size: 12px; text-align: center; color: var(--accent);"></p>
+                <button onclick="postData()">Post Now</button>
+                <button onclick="logout()" style="background:#444; margin-top:5px;">Logout</button>
             </div>
         </div>
 
         <div class="tabs">
-            <div class="tab active" onclick="switchTab('movie')">Movies</div>
-            <div class="tab" onclick="switchTab('music')">Music</div>
+            <div class="tab active" onclick="setTab('movie')">Movies</div>
+            <div class="tab" onclick="setTab('music')">Music</div>
         </div>
 
-        <div id="movieDisplay"></div>
-        <div id="musicDisplay" class="hidden"></div>
+        <div id="movieList"></div>
+        <div id="musicList" class="hidden"></div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
         import { getFirestore, collection, addDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-storage.js";
 
-        // Your Config
         const firebaseConfig = {
             apiKey: "AIzaSyCdyEiklUPrEL6TklIDyOh_F-PhgCyCjLw",
             authDomain: "zzaro0.firebaseapp.com",
             projectId: "zzaro0",
-            storageBucket: "zzaro0.firebasestorage.app",
+            storageBucket: "zzaro0.firebasestorage.app", // ဒါက ကုဒ်ထဲမှာပဲရှိနေမှာပါ၊ တကယ်မသုံးတော့ပါ
             messagingSenderId: "197891222875",
             appId: "1:197891222875:web:8897ba4de2829eeb0d3e7e"
         };
@@ -149,141 +93,94 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const storage = getStorage(app);
 
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        // ⚠️ Change this to your Telegram ID
-        const MY_ADMIN_ID = 1924452453; 
+        // ⚠️ Admin Telegram ID 
+        const ADMIN_ID = 1924452453; 
 
-        // Initial Load
-        window.addEventListener('load', () => {
-            const user = tg.initDataUnsafe.user;
-            if(user) document.getElementById('userNameDisplay').innerText = `Hello, ${user.first_name}!`;
-            
-            if(user && user.id === MY_ADMIN_ID) {
-                document.getElementById('adminSection').style.display = 'block';
-            }
-
-            setTimeout(() => {
-                document.getElementById('loadingScreen').style.opacity = '0';
-                setTimeout(() => {
-                    document.getElementById('loadingScreen').style.display = 'none';
-                    document.getElementById('mainApp').style.display = 'block';
-                }, 500);
-            }, 2000);
-        });
-
-        // Auth Functions
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                document.getElementById('loginForm').classList.add('hidden');
-                document.getElementById('uploadForm').classList.remove('hidden');
-            } else {
-                document.getElementById('loginForm').classList.remove('hidden');
-                document.getElementById('uploadForm').classList.add('hidden');
-            }
-        });
-
-        window.adminLogin = async () => {
-            const e = document.getElementById('email').value;
-            const p = document.getElementById('pass').value;
-            try { await signInWithEmailAndPassword(auth, e, p); } 
-            catch (err) { alert("Error: " + err.message); }
+        window.onload = () => {
+            const u = tg.initDataUnsafe.user;
+            if(u) document.getElementById('greet').innerText = `Hello, ${u.first_name}!`;
+            if(u && u.id === ADMIN_ID) document.getElementById('adminPanel').style.display = 'block';
+            setTimeout(() => document.getElementById('loader').style.display = 'none', 1500);
         };
 
+        // Auth
+        onAuthStateChanged(auth, user => {
+            document.getElementById('loginSection').classList.toggle('hidden', !!user);
+            document.getElementById('uploadSection').classList.toggle('hidden', !user);
+        });
+
+        window.adminLogin = () => {
+            signInWithEmailAndPassword(auth, document.getElementById('email').value, document.getElementById('pass').value)
+            .catch(e => alert(e.message));
+        };
         window.logout = () => signOut(auth);
 
-        // UI Logic
-        window.switchTab = (t) => {
+        window.toggleForm = () => {
+            const isM = document.getElementById('upType').value === 'movie';
+            document.getElementById('mForm').classList.toggle('hidden', !isM);
+            document.getElementById('muForm').classList.toggle('hidden', isM);
+        };
+
+        window.setTab = t => {
             document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
             event.target.classList.add('active');
-            if(t === 'movie') {
-                document.getElementById('movieDisplay').classList.remove('hidden');
-                document.getElementById('musicDisplay').classList.add('hidden');
-            } else {
-                document.getElementById('movieDisplay').classList.add('hidden');
-                document.getElementById('musicDisplay').classList.remove('hidden');
-            }
+            document.getElementById('movieList').classList.toggle('hidden', t !== 'movie');
+            document.getElementById('musicList').classList.toggle('hidden', t !== 'music');
         };
 
-        window.toggleInputs = () => {
-            const type = document.getElementById('type').value;
-            document.getElementById('movieInp').classList.toggle('hidden', type !== 'movie');
-            document.getElementById('musicInp').classList.toggle('hidden', type !== 'music');
-        };
-
-        // Upload Data
-        window.uploadData = async () => {
-            const type = document.getElementById('type').value;
-            const btn = document.getElementById('upBtn');
-            const progress = document.getElementById('progress');
-            
-            btn.disabled = true;
-            progress.innerText = "Uploading... please wait.";
-
+        window.postData = async () => {
+            const type = document.getElementById('upType').value;
             try {
                 if(type === 'movie') {
-                    const file = document.getElementById('mFile').files[0];
-                    if(!file) throw new Error("Select Image");
-                    const sRef = ref(storage, `movies/${Date.now()}_${file.name}`);
-                    await uploadBytes(sRef, file);
-                    const url = await getDownloadURL(sRef);
-
                     await addDoc(collection(db, "movies"), {
-                        title: document.getElementById('mTitle').value,
-                        review: document.getElementById('mReview').value,
-                        key: document.getElementById('mKey').value,
-                        img: url,
-                        time: Date.now()
+                        t: document.getElementById('mTitle').value,
+                        i: document.getElementById('mImg').value,
+                        k: document.getElementById('mKey').value,
+                        r: document.getElementById('mReview').value,
+                        date: Date.now()
                     });
                 } else {
-                    const file = document.getElementById('muFile').files[0];
-                    if(!file) throw new Error("Select Audio");
-                    const sRef = ref(storage, `music/${Date.now()}_${file.name}`);
-                    await uploadBytes(sRef, file);
-                    const url = await getDownloadURL(sRef);
-
                     await addDoc(collection(db, "music"), {
-                        title: document.getElementById('muTitle').value,
-                        lyrics: document.getElementById('muLyrics').value,
-                        audio: url,
-                        time: Date.now()
+                        t: document.getElementById('muTitle').value,
+                        u: document.getElementById('muUrl').value,
+                        l: document.getElementById('muLyrics').value,
+                        date: Date.now()
                     });
                 }
-                alert("Success!");
-                progress.innerText = "";
-            } catch (err) { alert(err.message); progress.innerText = ""; }
-            btn.disabled = false;
+                alert("Posted!");
+            } catch(e) { alert(e.message); }
         };
 
-        // Fetch Data
-        onSnapshot(query(collection(db, "movies"), orderBy("time", "desc")), (snap) => {
-            const div = document.getElementById('movieDisplay');
-            div.innerHTML = "";
-            snap.forEach(doc => {
+        // Realtime Data
+        onSnapshot(query(collection(db, "movies"), orderBy("date", "desc")), s => {
+            const list = document.getElementById('movieList');
+            list.innerHTML = "";
+            s.forEach(doc => {
                 const d = doc.data();
-                div.innerHTML += `<div class="card">
-                    <img src="${d.img}" class="poster">
-                    <div class="info">
-                        <h3 style="margin:0;">${d.title}</h3>
-                        <p style="font-size:12px; color:var(--accent);">Key: ${d.key}</p>
-                        <p style="font-size:13px; color:#aaa;">${d.review}</p>
+                list.innerHTML += `<div class="movie-card">
+                    <img src="${d.i}">
+                    <div class="m-info">
+                        <h4 style="margin:0;">${d.t}</h4>
+                        <small style="color:var(--accent)">Key: ${d.k}</small>
+                        <p style="font-size:12px; color:#aaa; margin-top:5px;">${d.r}</p>
                     </div>
                 </div>`;
             });
         });
 
-        onSnapshot(query(collection(db, "music"), orderBy("time", "desc")), (snap) => {
-            const div = document.getElementById('musicDisplay');
-            div.innerHTML = "";
-            snap.forEach(doc => {
+        onSnapshot(query(collection(db, "music"), orderBy("date", "desc")), s => {
+            const list = document.getElementById('musicList');
+            list.innerHTML = "";
+            s.forEach(doc => {
                 const d = doc.data();
-                div.innerHTML += `<div class="music-card">
-                    <h3 style="margin:0;">🎵 ${d.title}</h3>
-                    <audio controls src="${d.audio}"></audio>
-                    <p style="font-size:13px; color:#aaa; white-space:pre-line; margin-top:10px;">${d.lyrics}</p>
+                list.innerHTML += `<div class="music-card">
+                    <h4 style="margin:0;">🎵 ${d.t}</h4>
+                    <audio controls src="${d.u}"></audio>
+                    <p style="font-size:12px; color:#aaa; white-space:pre-line; margin-top:10px;">${d.l}</p>
                 </div>`;
             });
         });
